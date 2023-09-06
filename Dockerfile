@@ -21,7 +21,7 @@ RUN npm install -g yapi-cli --registry https://registry.npmmirror.com && \
 
 WORKDIR /yapi
 COPY ./ /yapi
-
+RUN cd /yapi/vendors && npm i --registry https://registry.npmmirror.com
 EXPOSE 3000
 
 
