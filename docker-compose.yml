@@ -1,0 +1,31 @@
+# Use root/example as user/password credentials
+version: '3.1'
+
+services:
+  mongo:
+    image: mongo:latest
+    restart: always
+    environment:
+        - TZ=Asia/Shanghai
+    volumes: 
+        - ./mongo/data/db:/data/db
+        - ./mongo/script:/data/script
+        - ./mongo/backup:/data/backup
+    ports: 
+        - 27017:27017
+    healthcheck:
+      test: ["CMD", "netstat -anp | grep 27017"]
+      interval: 2m
+      timeout: 10s
+      retries: 3
+  yapi:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: yapi
+    # 第一次启动会失败，因为MongoDB没有恢复用户数据，导致链接失败
+    command: "node /yapi/vendors/server/app.js"
+    ports: 
+      - 3005:3000
+    depends_on: 
+      - mongo

@@ -1,0 +1,19 @@
+name: Push to Docker Hub
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: push
+        run: |
+          VERSION=${GITHUB_REF:11}
+          docker login -u caoguanjie -p ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+          docker build -f ./Dockerfile -t caoguanjie/docker-yapi:latest -t caoguanjie/docker-yapi:v${VERSION} .
+          docker push caoguanjie/docker-yapi:latest
+          docker push caoguanjie/docker-yapi:v${VERSION}

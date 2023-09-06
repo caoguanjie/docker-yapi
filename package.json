@@ -1,0 +1,12 @@
+{
+  "name": "@caoguanjie/docker-yapi",
+  "version": "1.9.2",
+  "description": "YAPI",
+  "main": "vendors/server/app.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/caoguanjie/docker-yapi.git"
+  },
+  "author": "caoguanjie",
+  "license": "Apache-2.0"
+}
