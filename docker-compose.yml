@@ -8,7 +8,8 @@ services:
     environment:
         - TZ=Asia/Shanghai
     volumes: 
-        - ./mongo/data/db:/data/db
+       # window 和mac都不支持MongoDB的容器挂载数据卷，不兼容
+       # - ./mongo/data/db:/data/db
         - ./mongo/script:/data/script
         - ./mongo/backup:/data/backup
     ports: 
@@ -22,7 +23,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile
-    image: yapi
+    image: caoguanjie/docker-yapi:latest
     # 第一次启动会失败，因为MongoDB没有恢复用户数据，导致链接失败
     command: "node /yapi/vendors/server/app.js"
     ports: 

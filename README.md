@@ -93,11 +93,11 @@ mongodump -h 127.0.0.1:27017 -d yapi -o /data/backup
 
 
 # 把数据库文件打包,压缩包的名字类似：yapi_2023-08-23.tar.gz
-tar -zcvf  /data/db/backup/yapi_$(date +%F).tar.gz /data/db/backup/yapi
+tar -zcvf  yapi_$(date +%F).tar.gz yapi
 # 对应的解压命令是： tar -xzvf /data/db/backup/yapi_2023-08-23.tar.gz /data/db/backup/yapi
 
 # 删除目录
-rm -rf /data/db/backup/yapi
+rm -rf yapi
 ```
 
 2. 设置定时任务。
@@ -107,14 +107,13 @@ apt-get update
 apt-get install -y cron
 apt-get install -y vim
 apt-get -y install systemctl
-# 设置定时任务，执行下面的命令会进去一个配置文件中去
-crontab -e 
+# 设置定时任务，执行下面的命令会进去一个配置文件
 # 进到配置文件后，键盘输入： i，进行修改
 # 加上一条定时任务
 # 可以去菜鸟教程查看crontab命令：https://www.runoob.com/w3cnote/linux-crontab-tasks.html
-
+crontab -e 
 # 定义每周1到六，每天2点进行数据库备份
-*   2   *   *   1-6   sh /yapi/mongodump.sh
+*   2   *   *   1-6   sh /data/script/mongodump.sh
 
 # 进行上面操作后，键盘输入 esc + :wq(退出并保存)
 # ！！！！！注意保存前，一定要删除容器中其他的定时任务，防止占用资源
@@ -123,6 +122,7 @@ crontab -e
 # crond start（启动）、crond stop(停止)、crond restart(重启服务)、crond reload(重新加载)
 # 因此我们可以输入下面命令，进行定时器的启动
 cron start
+# 每次重启都要执行一次上面的定时任务，以为MongoDB的容器没办法执行开机开启cron
 ```
 
 
@@ -219,3 +219,34 @@ mongod --repair
 ```
 
 以上解决方案都不行，就重新部署吧，记得要把`/data/db/backup`文件夹中最近的备份拷贝好，以便恢复数据
+
+
+## MongoDB容器每次重启都会失败
+主要原因：[docker官网](https://hub.docker.com/_/mongo)有介绍, 在 Windows 和 OS X 上运行基于 Linux 的 MongoDB 映像时，用于在主机系统和 Docker 容器之间共享的文件系统与 MongoDB 使用的内存映射文件不兼容（文档）。 mongodb.org和相关的jira.mongodb.org错误）。这意味着无法运行数据目录映射到主机的 MongoDB 容器。要在容器重新启动之间保留数据，我们建议改用本地命名卷（请参阅 参考资料docker volume create）。或者，您可以在 Windows 上使用基于 Windows 的映像。
+
+也就是说docker-window不兼容数据卷的方式。
+
+解决办法：
+
+```yml
+# 删除MongoDB的db数据的数据卷挂载配置
+mongo:
+    image: mongo:latest
+    restart: always
+    environment:
+        - TZ=Asia/Shanghai
+    volumes: 
+       # window 和mac都不支持MongoDB的容器挂载数据卷，不兼容
+       # - ./mongo/data/db:/data/db
+        - ./mongo/script:/data/script
+        - ./mongo/backup:/data/backup
+    ports: 
+        - 27017:27017
+    healthcheck:
+      test: ["CMD", "netstat -anp | grep 27017"]
+      interval: 2m
+      timeout: 10s
+      retries: 3
+```
+
+由于恢复数据和备份数据，都可以在backup这个文件夹，所以不需要db文件也可以。
